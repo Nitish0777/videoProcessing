@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles.css">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Dashboard</h1>
+    <h2>Your Videos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Video ID</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Duration (seconds)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="video-table-body">
+            <!-- Video entries will be injected here -->
+        </tbody>
+    </table>
+    <form id="add-video-form">
+        <h3>Add Video</h3>
+        <input type="text" id="videoId" placeholder="Video ID" required>
+        <input type="text" id="title" placeholder="Title" required>
+        <input type="text" id="description" placeholder="Description" required>
+        <input type="number" id="duration" placeholder="Duration" required>
+        <button type="submit">Add Video</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('add-video-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const videoData = {
+                videoId: form.videoId.value,
+                title: form.title.value,
+                description: form.description.value,
+                duration: form.duration.value,
+            };
+
+            const token = localStorage.getItem('token'); // assuming the token is saved in local storage
+            const response = await fetch('/api/videos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(videoData)
+            });
+
+            if (response.ok) {
+                alert('Video added successfully');
+                loadVideos(); // Refresh the video list
+            } else {
+                alert('Failed to add video');
+            }
+        });
+
+        async function loadVideos() {
+            const token = localStorage.getItem('token'); // assuming the token is saved in local storage
+            const response = await fetch('/api/videos', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const videos = await response.json();
+                const tableBody = document.getElementById('video-table-body');
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                videos.forEach(video => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${video.videoId}</td>
+                        <td>${video.title}</td>
+                        <td>${video.description}</td>
+                        <td>${video.duration}</td>
+                        <td>
+                            <button onclick="deleteVideo('${video.videoId}')">Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+        }
+
+        async function deleteVideo(videoId) {
+            const token = localStorage.getItem('token'); // assuming the token is saved in local storage
+            const response = await fetch(`/api/videos/${videoId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                alert('Video deleted successfully');
+                loadVideos(); // Refresh the video list
+            } else {
+                alert('Failed to delete video');
+            }
+        }
+
+        // Load videos when the page loads
+        window.onload = loadVideos;
+    </script>
+</body>
+</html>
